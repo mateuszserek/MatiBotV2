@@ -5,15 +5,15 @@ from song import Song
 from youtubesearchpython import VideosSearch
 import yt_dlp
 from discord import FFmpegOpusAudio
-from pytubefix import YouTube
+from server import Server
 
 
 def gen_music_functions():
 
-    def get_guild_queue(guild_id):
+    def get_guild_object(guild_id) -> Server:
         for i in servers:
             if i.id == guild_id:
-                return i.music_queue
+                return i
 
     @bot.tree.command(name = "play", description = "play some music")
     @discord.app_commands.describe(query = "your request")
@@ -22,14 +22,21 @@ def gen_music_functions():
         song_info = find_info_from_yt(query)
 
         song = Song(query, "niewazne", interaction.user.name)
-        guild_queue = get_guild_queue(interaction.guild.id)
-        guild_queue.append(song)
+        guild_object = get_guild_object(interaction.guild.id)
+        guild_object.music_queue.append(song)
+
+        if guild_object.is_playing_on_vc:
+            await interaction.response.send_message("ups")
+            return
+
+        guild_object.is_playing_on_vc = True
         download_audio_from_youtube(song_info["link"], interaction.guild.id)
 
-        vc = interaction.user.voice.channel 
+        vc = interaction.user.voice.channel
         await vc.connect()
         src = FFmpegOpusAudio(f"audio/{interaction.guild.id}.mp3")
-        vc.play(src, after = lambda e: print("piwo"))
+        
+        interaction.guild.voice_client.play(src, after = lambda e: print("piwo"))
         await interaction.response.send_message(f"jazda z patafianami")
 
 
@@ -47,10 +54,6 @@ def gen_music_functions():
     }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([link])
-        # yt = YouTube(link, allow_oauth_cache = True, use_po_token = True)
-        # video = yt.streams.filter(only_audio=True).first()
-        # destination = f"audio/{guild_id}.mp3"
-        # out_file = video.download(output_path=destination)
 
 
     def find_info_from_yt(keyword: str) -> dict:  #do poprawyyy try, except
