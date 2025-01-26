@@ -1,11 +1,6 @@
-import discord
-from discord.ext import commands
 from functions import *
 from init import *
 from events import *
+from music_commands import *
 
-def main():
-    bot.run(get_token("DISCORD_TOKEN"))
-
-if __name__ == "__main__":
-    main()
+bot.run(get_token("DISCORD_TOKEN"))
