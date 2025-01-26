@@ -1,11 +1,21 @@
 from init import bot, servers
-import discord 
+from server import Server
 
-@bot.event
-async def on_message(msg):
-    if msg.author == bot.user:
-        return 
-    if msg.content.__contains__("hello"):
-        await msg.channel.send("hello")
+def generate_bot_event_functions():
+    @bot.event 
+    async def on_ready():
+        print(f"logged in as {bot.user}")
+        
+        for guild in bot.guilds:
+            servers.append(Server(guild.id))
 
-    await bot.tree.sync(guild = bot.get_guild(630115790460420096))
+
+
+    @bot.event
+    async def on_message(msg):
+        if msg.author == bot.user:
+            return 
+        if msg.content.__contains__("hello"):
+            await msg.channel.send("hello")
+
+        await bot.tree.sync(guild = bot.get_guild(630115790460420096))

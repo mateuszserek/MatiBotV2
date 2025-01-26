@@ -1,9 +1,7 @@
-from queue import Queue
-
 class Server:
     def __init__(self, id: int):
         self.id = id
-        self.music_queue = Queue
+        self.music_queue = []
 
     def get_serv_info(self):
-        print(self.id + " " + self.music_queue)
+        print(f"id: {self.id}, queue: {self.music_queue}")
