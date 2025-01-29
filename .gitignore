@@ -3,3 +3,4 @@ env
 .env
 .venv
 audio
+music_functions/__pycache__
