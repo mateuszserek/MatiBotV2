@@ -17,7 +17,7 @@ def gen_music_functions():
 
     @bot.tree.command(name = "play", description = "play some music")
     @discord.app_commands.describe(query = "your request")
-    async def play(interaction: discord.Interaction, query: str):
+    async def play(interaction: discord.Interaction, query: str):        
 
         guild_object = get_guild_object(interaction.guild.id)
         add_song_to_queue(guild_object, query, interaction.user.name)
