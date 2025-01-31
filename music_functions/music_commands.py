@@ -6,20 +6,19 @@ from youtubesearchpython import VideosSearch
 import yt_dlp
 from discord import FFmpegOpusAudio
 from server import Server
+from asyncio import ensure_future
+import os
+from functions import get_guild_object
 
 
 def gen_music_functions():
-
-    def get_guild_object(guild_id) -> Server:
-        for i in servers:
-            if i.id == guild_id:
-                return i
 
     @bot.tree.command(name = "play", description = "play some music")
     @discord.app_commands.describe(query = "your request")
     async def play(interaction: discord.Interaction, query: str):        
 
-        guild_object = get_guild_object(interaction.guild.id)
+        guild_object = get_guild_object(interaction.guild.id, servers)
+
         add_song_to_queue(guild_object, query, interaction.user.name)
 
         if guild_object.is_playing_on_vc:
@@ -34,19 +33,23 @@ def gen_music_functions():
 
 
     def download_and_play(voice_channel, guild_id):
-        guild_object = get_guild_object(guild_id)
+        guild_object = get_guild_object(guild_id, servers)
         download_audio_from_youtube(guild_object.music_queue[0].url, guild_id)
         src = FFmpegOpusAudio(f"audio/{guild_id}.mp3")
         voice_channel.play(src, after = lambda e: after_song(voice_channel, guild_id))
         
 
     def after_song(voice_channel, guild_id):
-        guild_object = get_guild_object(guild_id)
+        guild_object = get_guild_object(guild_id, servers)
         guild_object.music_queue.pop(0)
+        os.remove(f"audio/{guild_id}.mp3")
 
         if len(guild_object.music_queue) == 0:
-            voice_channel.disconnect() #nie działa, was never awaited - zobacz funkcje async in sync function w poprzednim bocie
+            coro = voice_channel.disconnect()
+            fut = ensure_future(coro, loop = bot.loop)
+            fut.add_done_callback(lambda t: t.result()) #tajemnicza koncepcja która poprostu działa, można kiedyś przerobć na funkcję
             guild_object.is_playing_on_vc = False
+
         else:
             download_and_play(voice_channel, guild_id)
 
@@ -84,3 +87,11 @@ def gen_music_functions():
                 "duration": duration
             }
             
+    # def check_correct_vc(bot_vc, user_vc) -> bool:
+    #     if user_vc is None:
+    #         return False 
+        
+    #     if user_vc != bot_vc:
+    #         return False 
+        
+    #     return True 
