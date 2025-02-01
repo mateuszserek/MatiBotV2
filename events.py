@@ -8,7 +8,8 @@ def generate_bot_event_functions():
         
         for guild in bot.guilds:
             servers.append(Server(guild.id))
-
+        
+        await bot.tree.sync()
 
 
     @bot.event

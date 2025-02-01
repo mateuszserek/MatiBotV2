@@ -8,7 +8,7 @@ from discord import FFmpegOpusAudio
 from server import Server
 from asyncio import ensure_future
 import os
-from functions import get_guild_object
+from functions import get_guild_object, create_embed
 
 
 def gen_music_functions():
@@ -18,13 +18,15 @@ def gen_music_functions():
     async def play(interaction: discord.Interaction, query: str):        
 
         guild_object = get_guild_object(interaction.guild.id, servers)
-
         add_song_to_queue(guild_object, query, interaction.user.name)
-
+        song_obj = guild_object.music_queue[0]
+        embed = create_embed("Dodano do kolejki", f"Title: {song_obj.title} \nRequested by: {song_obj.requested_by}\nDuration: {song_obj.duration}", 0x222222)  
+        
         if guild_object.is_playing_on_vc:
-            await interaction.response.send_message("dodano do kolejki (chyba)")
+            await interaction.response.send_message(embed = embed)
             return
 
+        await interaction.channel.send(embed = embed)
         guild_object.is_playing_on_vc = True
         vc = interaction.user.voice.channel
         await vc.connect()
@@ -56,9 +58,8 @@ def gen_music_functions():
 
     def add_song_to_queue(guild_object, query, username):
         song_info = find_info_from_yt(query)
-        song = Song(song_info["title"], query, song_info["duration"], username, song_info["link"])
+        song = Song(query,song_info["duration"], username, song_info["title"], song_info["link"])
         guild_object.music_queue.append(song)
-
 
 
     def download_audio_from_youtube(link: str, guild_id: int) -> None: #dorobić try, except
