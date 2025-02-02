@@ -34,6 +34,7 @@ def gen_music_functions():
         await vc.connect()
         download_and_play(interaction.guild.voice_client, interaction.guild.id, text_channel)
 
+
     @bot.tree.command(name = "skip", description = "Skip current song")
     async def skip(interaction: discord.Interaction):
 
@@ -46,12 +47,17 @@ def gen_music_functions():
             await interaction.response.send_message("queue is already empty")
             return
         
-        guild_object.music_queue.pop(0)
+        await interaction.response.send_message("Skipping current song")
+        vc.stop()
 
-        if len(guild_object.music_queue) == 0:
-            await interaction.response.send_message("queue empty")
-            await vc.disconnect()
 
+    @bot.event
+    async def on_voice_state_update(member, before, after):
+        if member == bot.user and member.voice is None:
+            guild_id = before.channel.guild.id 
+            guild_object = get_guild_object(guild_id, servers)
+            guild_object.music_queue = []
+            guild_object.is_playing_on_vc = False 
 
 
     def download_and_play(voice_channel, guild_id, text_channel):
@@ -65,18 +71,23 @@ def gen_music_functions():
         
 
     def after_song(voice_channel, guild_id, text_channel):
+
         guild_object = get_guild_object(guild_id, servers)
+
+        if not guild_object.music_queue:
+            return 
+        
         guild_object.music_queue.pop(0)
         os.remove(f"audio/{guild_id}.mp3")
 
-        if len(guild_object.music_queue) == 0:
+        if not guild_object.music_queue:
             async_in_sync_function(voice_channel.disconnect)
             embed = create_embed("Queue empty", "It was the last song, use `/play` to add something", 0x222222)
             async_in_sync_function(lambda: text_channel.send(embed = embed))
             guild_object.is_playing_on_vc = False
 
         else:
-            download_and_play(voice_channel, guild_id)
+            download_and_play(voice_channel, guild_id, text_channel)
 
 
     def add_song_to_queue(guild_object, query, username) -> Song:

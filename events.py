@@ -1,5 +1,6 @@
 from init import bot, servers
 from server import Server
+from functions import get_guild_object
 
 def generate_bot_event_functions():
     @bot.event 
@@ -16,5 +17,4 @@ def generate_bot_event_functions():
             return 
         if msg.content.__contains__("hello"):
             await msg.channel.send("hello")
-
-        await bot.tree.sync(guild = bot.get_guild(630115790460420096))
+            await bot.tree.sync(guild = bot.get_guild(630115790460420096))
