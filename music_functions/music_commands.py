@@ -37,17 +37,17 @@ def gen_music_functions():
 
     @bot.tree.command(name = "skip", description = "Skip current song")
     async def skip(interaction: discord.Interaction):
-
+        await interaction.response.defer()
         vc = interaction.guild.voice_client
         if vc is None:
             return 
         
         guild_object = get_guild_object(interaction.guild.id, servers)
         if len(guild_object.music_queue) == 0:
-            await interaction.response.send_message("queue is already empty")
+            await interaction.followup.send("queue is already empty")
             return
         
-        await interaction.response.send_message("Skipping current song")
+        await interaction.followup.send("Skipping current song")
         vc.stop()
 
 
