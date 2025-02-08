@@ -32,7 +32,7 @@ def gen_music_functions():
         vc = interaction.user.voice.channel
         text_channel = interaction.channel
         await vc.connect()
-        download_and_play(interaction.guild.voice_client, interaction.guild.id, text_channel)
+        await download_and_play(interaction.guild.voice_client, interaction.guild.id, text_channel)
 
 
     @bot.tree.command(name = "skip", description = "Skip current song")
@@ -60,7 +60,7 @@ def gen_music_functions():
             guild_object.is_playing_on_vc = False 
 
 
-    def download_and_play(voice_channel, guild_id, text_channel):
+    async def download_and_play(voice_channel, guild_id, text_channel):
         guild_object = get_guild_object(guild_id, servers)
         song_obj = guild_object.music_queue[0]
         download_audio_from_youtube(guild_object.music_queue[0].url, guild_id)
@@ -87,7 +87,7 @@ def gen_music_functions():
             guild_object.is_playing_on_vc = False
 
         else:
-            download_and_play(voice_channel, guild_id, text_channel)
+            async_in_sync_function(lambda: download_and_play(voice_channel, guild_id, text_channel) ) 
 
 
     def add_song_to_queue(guild_object, query, username) -> Song:

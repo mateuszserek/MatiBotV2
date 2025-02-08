@@ -17,4 +17,3 @@ def generate_bot_event_functions():
             return 
         if msg.content.__contains__("hello"):
             await msg.channel.send("hello")
-            await bot.tree.sync(guild = bot.get_guild(630115790460420096))
