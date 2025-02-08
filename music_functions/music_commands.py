@@ -53,17 +53,22 @@ def gen_music_functions():
 
     @bot.event
     async def on_voice_state_update(member, before, after):
-        if member == bot.user and member.voice is None:
+        if member == bot.user and before.channel != None:
             guild_id = before.channel.guild.id 
             guild_object = get_guild_object(guild_id, servers)
             guild_object.music_queue = []
             guild_object.is_playing_on_vc = False 
+            for i in bot.voice_clients:
+                if i.guild.id == before.channel.guild.id:
+                    await i.disconnect(force = True)
+                    return
+                
 
 
     async def download_and_play(voice_channel, guild_id, text_channel):
         guild_object = get_guild_object(guild_id, servers)
         song_obj = guild_object.music_queue[0]
-        download_audio_from_youtube(guild_object.music_queue[0].url, guild_id)
+        await download_audio_from_youtube(guild_object.music_queue[0].url, guild_id)
         src = FFmpegOpusAudio(f"audio/{guild_id}.mp3")
         embed = create_embed("Playing", f"Title: {song_obj.title} \nRequested by: {song_obj.requested_by}\nDuration: {song_obj.duration}", 0x222222) 
         async_in_sync_function(lambda: text_channel.send(embed = embed)) 
@@ -97,7 +102,7 @@ def gen_music_functions():
         return song
 
 
-    def download_audio_from_youtube(link: str, guild_id: int) -> None: #dorobić try, except
+    async def download_audio_from_youtube(link: str, guild_id: int) -> None: #dorobić try, except
         ydl_opts = {
         'format': 'bestaudio/best',
         'postprocessors': [{
