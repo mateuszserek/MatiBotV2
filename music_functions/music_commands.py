@@ -7,6 +7,7 @@ from discord import FFmpegOpusAudio
 from asyncio import ensure_future
 import os
 from functions import get_guild_object, create_embed
+import multiprocessing
 
 
 def gen_music_functions():
@@ -63,7 +64,11 @@ def gen_music_functions():
     async def download_and_play(voice_channel, guild_id, text_channel):
         guild_object = get_guild_object(guild_id, servers)
         song_obj = guild_object.music_queue[0]
-        download_audio_from_youtube(guild_object.music_queue[0].url, guild_id)
+
+        download_process = multiprocessing.Process(target = download_audio_from_youtube, args = (guild_object.music_queue[0].url, guild_id))
+        #download_audio_from_youtube(guild_object.music_queue[0].url, guild_id)
+        download_process.start()
+        download_process.join()
         src = FFmpegOpusAudio(f"audio/{guild_id}.mp3")
         embed = create_embed("Playing", f"Title: {song_obj.title} \nRequested by: {song_obj.requested_by}\nDuration: {song_obj.duration}", 0x222222) 
         async_in_sync_function(lambda: text_channel.send(embed = embed)) 
