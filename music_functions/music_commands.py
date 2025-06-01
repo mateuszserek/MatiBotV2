@@ -7,9 +7,39 @@ from discord import FFmpegOpusAudio
 from asyncio import ensure_future, get_event_loop
 import os
 from functions import get_guild_object, create_embed
-import concurrent.futures
 import multiprocessing
 
+def download_audio_from_youtube(link: str, guild_id: int) -> None: #dorobić try, except
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'quiet': True,
+        'no_warnings': True,
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',  
+            'preferredquality': '192',
+        }],
+        'outtmpl': f'audio/{guild_id}',
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([link])
+
+def find_info_from_yt(keyword: str) -> dict:  #do poprawyyy try, except
+    video_info = VideosSearch(keyword, limit = 1).result()["result"][0]
+    if video_info["type"] == "video":
+        link = video_info["link"] 
+        title = video_info["title"] 
+        duration = video_info["duration"]
+        return {
+            "link": link,
+            "title": title,
+            "duration": duration
+        }
+        
+def async_in_sync_function(func):
+    coro = func()
+    fut = ensure_future(coro, loop = bot.loop)
+    fut.add_done_callback(lambda t: t.result())
 
 def gen_music_functions():
 
@@ -39,6 +69,7 @@ def gen_music_functions():
 
     @bot.tree.command(name = "skip", description = "Skip current song")
     async def skip(interaction: discord.Interaction):
+        #potrzebne jest zatrzymanie pobierania audio
         await interaction.response.defer()
         vc = interaction.guild.voice_client
         if vc is None:
@@ -66,18 +97,20 @@ def gen_music_functions():
         guild_object = get_guild_object(guild_id, servers)
         song_obj = guild_object.music_queue[0]
 
-        #download_process = multiprocessing.Process(target = download_audio_from_youtube, args = (guild_object.music_queue[0].url, guild_id))
+        download_process = multiprocessing.Process(target = download_audio_from_youtube, args = (guild_object.music_queue[0].url, guild_id))
         # with concurrent.futures.ProcessPoolExecutor() as executor:
         #     p1 = executor.submit(download_audio_from_youtube, guild_object.music_queue[0].url, guild_id)
         #     print(p1.result())
         # loop = get_event_loop()
         # with concurrent.futures.ProcessPoolExecutor() as executor:
-        #     x = await loop.run_in_executor(executor, download_audio_from_youtube, guild_object.music_queue[0].url, guild_id)
+        #     await loop.run_in_executor(executor, download_audio_from_youtube, guild_object.music_queue[0].url, guild_id)
 
-        download_audio_from_youtube(guild_object.music_queue[0].url, guild_id)
-        # download_process.start()
-        # download_process.join()
-        # download_process.close()
+        #download_audio_from_youtube(guild_object.music_queue[0].url, guild_id)
+        download_process.start()
+        download_process.join()
+        download_process.close()
+
+        #narazie dziala, trzeba przetestowac pobieranie na 2 serwerach naraz
 
         src = FFmpegOpusAudio(f"audio/{guild_id}.mp3")
         embed = create_embed("Playing", f"Title: {song_obj.title} \nRequested by: {song_obj.requested_by}\nDuration: {song_obj.duration}", 0x222222) 
@@ -111,37 +144,6 @@ def gen_music_functions():
         guild_object.music_queue.append(song)
         return song
 
-
-    def download_audio_from_youtube(link: str, guild_id: int) -> None: #dorobić try, except
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',  
-                'preferredquality': '192',
-            }],
-            'outtmpl': f'audio/{guild_id}',
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([link])
-
-
-    def find_info_from_yt(keyword: str) -> dict:  #do poprawyyy try, except
-        video_info = VideosSearch(keyword, limit = 1).result()["result"][0]
-        if video_info["type"] == "video":
-            link = video_info["link"] 
-            title = video_info["title"] 
-            duration = video_info["duration"]
-            return {
-                "link": link,
-                "title": title,
-                "duration": duration
-            }
-        
-    def async_in_sync_function(func):
-        coro = func()
-        fut = ensure_future(coro, loop = bot.loop)
-        fut.add_done_callback(lambda t: t.result())
 
             
     # def check_correct_vc(bot_vc, user_vc) -> bool:
