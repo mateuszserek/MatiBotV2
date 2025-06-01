@@ -4,9 +4,10 @@ from music_functions.song import Song
 from youtubesearchpython import VideosSearch
 import yt_dlp
 from discord import FFmpegOpusAudio
-from asyncio import ensure_future
+from asyncio import ensure_future, get_event_loop
 import os
 from functions import get_guild_object, create_embed
+import concurrent.futures
 import multiprocessing
 
 
@@ -65,10 +66,19 @@ def gen_music_functions():
         guild_object = get_guild_object(guild_id, servers)
         song_obj = guild_object.music_queue[0]
 
-        download_process = multiprocessing.Process(target = download_audio_from_youtube, args = (guild_object.music_queue[0].url, guild_id))
-        #download_audio_from_youtube(guild_object.music_queue[0].url, guild_id)
-        download_process.start()
-        download_process.join()
+        #download_process = multiprocessing.Process(target = download_audio_from_youtube, args = (guild_object.music_queue[0].url, guild_id))
+        # with concurrent.futures.ProcessPoolExecutor() as executor:
+        #     p1 = executor.submit(download_audio_from_youtube, guild_object.music_queue[0].url, guild_id)
+        #     print(p1.result())
+        # loop = get_event_loop()
+        # with concurrent.futures.ProcessPoolExecutor() as executor:
+        #     x = await loop.run_in_executor(executor, download_audio_from_youtube, guild_object.music_queue[0].url, guild_id)
+
+        download_audio_from_youtube(guild_object.music_queue[0].url, guild_id)
+        # download_process.start()
+        # download_process.join()
+        # download_process.close()
+
         src = FFmpegOpusAudio(f"audio/{guild_id}.mp3")
         embed = create_embed("Playing", f"Title: {song_obj.title} \nRequested by: {song_obj.requested_by}\nDuration: {song_obj.duration}", 0x222222) 
         async_in_sync_function(lambda: text_channel.send(embed = embed)) 
@@ -104,14 +114,14 @@ def gen_music_functions():
 
     def download_audio_from_youtube(link: str, guild_id: int) -> None: #dorobić try, except
         ydl_opts = {
-        'format': 'bestaudio/best',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',  
-            'preferredquality': '192',
-        }],
-        'outtmpl': f'audio/{guild_id}',
-    }
+            'format': 'bestaudio/best',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',  
+                'preferredquality': '192',
+            }],
+            'outtmpl': f'audio/{guild_id}',
+        }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([link])
 
